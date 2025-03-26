@@ -15,13 +15,13 @@ body {
     min-height: 50px; /* Минимальная высота ячейки */
 }
 .work {
-    background-color: rgb(231, 74, 74); /* Красный цвет для рабочих дней */
+    background-color: rgb(255, 0, 0); /* Красный цвет для рабочих дней */
 }
 .off {
-    background-color: rgb(78, 179, 78); /* Зеленый цвет для выходных */
+    background-color: rgb(0, 255, 0); /* Зеленый цвет для выходных */
 }
 .coincidence {
-    background-color: rgb(83, 83, 172); /* Синий цвет для совпадений */
+    background-color: rgb(0, 60, 255); /* Синий цвет для совпадений */
 }
 input {
     margin: 10px; /* Отступы для полей ввода */

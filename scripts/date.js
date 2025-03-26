@@ -16,6 +16,8 @@ var data_name_schedule = {
     },
 }
 
+var grafik_name = {1:"утро",2:"вечер",3:"ночь",4:"сутки",5:"день",6:"выходной"}
+
 var day_name = ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"]
 var name_state = "Clark"
 var global_month = new Date().getMonth();
@@ -27,11 +29,13 @@ const monthTitleElement = document.getElementById('monthTitle'); // Получа
 let currentYear = new Date().getFullYear();
 let currentMonth = new Date().getMonth();
 let workingDayCounter = 0; // Счетчик рабочих дней
+let workingDayCounter3to2 = 0; // Счетчик рабочих дней
 let workDays, offDays; // Количество рабочих и выходных дней в графике
 
 
 function generateCalendar(data_name){
     workingDayCounter = 0;
+    workingDayCounter3to2 = 0;
     var date = data_name_schedule[data_name]["date"]
     setSchedule(data_name_schedule[data_name]["schedule"])
     const dateParts = date.split('.'); // Предполагаем формат YYYY-MM-DD
@@ -50,15 +54,46 @@ function generateCalendar(data_name){
         //console.log(`${new Intl.DateTimeFormat('ru-RU', { month: 'long' }).format(new Date(year, i+month))} ${year}`)
         const daysInMonth = new Date(year, month + i + 1, 0).getDate(); // Получаем количество дней в месяце
         for (let days = 0; days < daysInMonth; days++) {
+            data_name_schedule[data_name]["month_count"][i+month][days+1] = {};
             //console.log(month,i+month)
             if (days + 1 >= day || month < i+month) {
                 if (workingDayCounter < workDays) {
-                    data_name_schedule[data_name]["month_count"][i+month][days+1] = "work"
+                    data_name_schedule[data_name]["month_count"][i+month][days+1]["style"] = "work"
                     workingDayCounter++; // Увеличиваем счетчик рабочих дней
+                    
+                    if (data_name_schedule[data_name]["schedule"] == "2/2"){
+                        workingDayCounter3to2++;
+                        if (workingDayCounter3to2 == 3){
+                            workingDayCounter3to2 = 1
+                        }
+                        if (workingDayCounter3to2 == 1){
+                            data_name_schedule[data_name]["month_count"][i+month][days+1]["name_day"] = grafik_name[5]
+                        } else {
+                            data_name_schedule[data_name]["month_count"][i+month][days+1]["name_day"] = grafik_name[3]
+                        }
+                    }
+                    if (data_name_schedule[data_name]["schedule"] == "3/2"){
+                        workingDayCounter3to2++;
+                        if (workingDayCounter3to2 == 10){
+                            workingDayCounter3to2 = 1
+                        }
+                        if (workingDayCounter3to2 < 4){
+                            data_name_schedule[data_name]["month_count"][i+month][days+1]["name_day"] = grafik_name[1]
+                        } else if (workingDayCounter3to2 < 7){
+                            data_name_schedule[data_name]["month_count"][i+month][days+1]["name_day"] = grafik_name[2]
+                        } else if (workingDayCounter3to2 < 10){
+                            data_name_schedule[data_name]["month_count"][i+month][days+1]["name_day"] = grafik_name[3]
+                        }
+                    }
+                    if (data_name_schedule[data_name]["schedule"] == "1/3"){
+                        data_name_schedule[data_name]["month_count"][i+month][days+1]["name_day"] = grafik_name[4]
+                    }
                 } else {
-                    data_name_schedule[data_name]["month_count"][i+month][days+1] = "off"
+                    data_name_schedule[data_name]["month_count"][i+month][days+1]["style"] = "off"
+                    data_name_schedule[data_name]["month_count"][i+month][days+1]["name_day"] = grafik_name[6]
                     if (workingDayCounter >= workDays + offDays - 1) {
                         workingDayCounter = 0; // Сбрасываем счетчик после полного цикла
+                        
                     } else {
                         workingDayCounter++; // Увеличиваем счетчик
                     }
@@ -103,11 +138,13 @@ function createCalendar(){
     for (const key in data_name_schedule[name_state]["month_count"][global_month]) {
         const dayDiv = document.createElement('div'); // Создаем элемент для дня
         dayDiv.classList.add('day');
-        dayDiv.classList.add(data_name_schedule[name_state]["month_count"][global_month][key]); // Добавляем класс для стилей
-        if (data_name_schedule["Clark"]["month_count"][global_month][key] == "off" && data_name_schedule["Reklizon"]["month_count"][global_month][key] == "off" && data_name_schedule["Diablo"]["month_count"][global_month][key] == "off") {
+        dayDiv.classList.add(data_name_schedule[name_state]["month_count"][global_month][key]["style"]); // Добавляем класс для стилей
+        if (data_name_schedule["Clark"]["month_count"][global_month][key]["style"] == "off" && data_name_schedule["Reklizon"]["month_count"][global_month][key]["style"] == "off" && data_name_schedule["Diablo"]["month_count"][global_month][key]["style"] == "off") {
             dayDiv.classList.add('coincidence');
+            dayDiv.innerText = key + "\n" + data_name_schedule[name_state]["month_count"][global_month][key]["name_day"] + "\n совпадение"; // Устанавливаем текст в ячейку
+        } else {
+            dayDiv.innerText = key + "\n" + data_name_schedule[name_state]["month_count"][global_month][key]["name_day"]; // Устанавливаем текст в ячейку
         }
-        dayDiv.innerText = key; // Устанавливаем текст в ячейку
         calendarElement.appendChild(dayDiv); // Добавляем ячейку дня в календарь
     }
 
