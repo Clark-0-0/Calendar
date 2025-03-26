@@ -82,7 +82,7 @@ function createCalendar(){
 
     calendarElement.innerHTML = ''; // Очищаем предыдущий календарь
 
-    const firstDay = new Date(currentYear, month, 1).getDay(); // Получаем день недели для первого числа месяца
+    const firstDay = new Date(year, global_month, 1).getDay(); // Получаем день недели для первого числа месяца
 
     monthTitleElement.innerText = `${new Intl.DateTimeFormat('ru-RU', { month: 'long' }).format(new Date(year, global_month))} ${year}`;
     for(let i = 0; i < 7; i++) {
