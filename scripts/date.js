@@ -155,7 +155,6 @@ function createCalendar(){
 generateCalendar("Clark")
 generateCalendar("Reklizon")
 generateCalendar("Diablo")
-console.log(data_name_schedule)
 
 createCalendar()
 
