@@ -16,7 +16,7 @@ var data_name_schedule = {
     },
 }
 
-var grafik_name = {1:"утро",2:"вечер",3:"ночь",4:"сутки",5:"день",6:"выходной"}
+var grafik_name = {1:"утро\nс 8:00 до 16:00",2:"вечер\nс 16:00 до 00:00",3:"ночь\nс 00:00 до 8:00",4:"сутки",5:"день",6:"выходной",7:"ночь"}
 
 var day_name = ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"]
 var name_state = "Clark"
@@ -69,7 +69,7 @@ function generateCalendar(data_name){
                         if (workingDayCounter3to2 == 1){
                             data_name_schedule[data_name]["month_count"][i+month][days+1]["name_day"] = grafik_name[5]
                         } else {
-                            data_name_schedule[data_name]["month_count"][i+month][days+1]["name_day"] = grafik_name[3]
+                            data_name_schedule[data_name]["month_count"][i+month][days+1]["name_day"] = grafik_name[7]
                         }
                     }
                     if (data_name_schedule[data_name]["schedule"] == "3/2"){
