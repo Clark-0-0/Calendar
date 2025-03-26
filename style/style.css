@@ -1,0 +1,33 @@
+body {
+    font-family: Arial, sans-serif;
+}
+.calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr); /* Создаем сетку для дней недели */
+    width: 100%;
+    max-width: 600px;
+    margin: 20px auto;
+}
+.day {
+    border: 1px solid #ccc; /* Граница для ячеек календаря */
+    padding: 10px;
+    text-align: center;
+    min-height: 50px; /* Минимальная высота ячейки */
+}
+.work {
+    background-color: rgb(231, 74, 74); /* Красный цвет для рабочих дней */
+}
+.off {
+    background-color: rgb(78, 179, 78); /* Зеленый цвет для выходных */
+}
+.coincidence {
+    background-color: rgb(83, 83, 172); /* Синий цвет для совпадений */
+}
+input {
+    margin: 10px; /* Отступы для полей ввода */
+}
+.month-title {
+    text-align: center;
+    font-size: 1.5em; /* Размер шрифта для названия месяца */
+    margin: 10px 0;
+}

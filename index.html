@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Календарь</title>
+    <link rel="stylesheet" href="style\style.css">
+</head>
+<body>
+    <h1 style="text-align: center;">Календарь</h1>
+<div>
+    
+    </div>
+    <div class="month-title" id="monthTitle"></div>
+    <div style="text-align: center;">
+        <select id="names" name="names" style="text-align: center;" onclick="createCalendar()">
+            <option value="Clark">Clark</option>
+            <option value="Reklizon">Reklizon</option>
+            <option value="Diablo">Diablo</option>
+        </select>
+        <button onclick="createCalendar()" style="text-align: center;">Обновить календарь</button> <!-- Кнопка для обновления календаря -->
+    </div>
+    <div style="text-align: center;">
+        <button onclick="previousMonth()">Предыдущий месяц</button>
+        <button onclick="nextMonth()">Следующий месяц</button>
+    </div>
+    <div class="calendar" id="calendar"></div> <!-- Контейнер для отображения календаря -->
+    <script src="scripts\date.js"></script>
+</body>
+</html>
