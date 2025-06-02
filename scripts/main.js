@@ -279,6 +279,7 @@ function add_user() {
             if (data_name_schedule[id]) {
                 // Например, сохраняем состояние в объекте:
                 data_name_schedule[id].schedule_state = isChecked;
+                write_data()
                 updateCalendar() 
             }
         });
@@ -459,6 +460,7 @@ function read_data() {
                 if (data_name_schedule[id]) {
                     // Например, сохраняем состояние в объекте:
                     data_name_schedule[id].schedule_state = isChecked;
+                    write_data()
                     updateCalendar() 
                 }
             });
