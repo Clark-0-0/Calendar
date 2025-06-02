@@ -12,16 +12,44 @@
 </head>
 <body>
     <h1 style="text-align: center;">Календарь</h1>
-<div>
-    
+    <div>
+        <div class="add_user" style="text-align: center;">
+            <input id="add_name" type="text" placeholder="Имя" style="width: 100px;">
+            <input id="add_date" type="date" name=""  style="width: 100px;">
+            <select id="add_schedule" name="schedules" style="text-align: center;">
+                <option value="2/2">2/2</option>
+                <option value="1/3">1/3</option>
+                <option value="3/2">3/2</option>
+            </select>
+            <input type="button" value="Добавить" onclick="add_user()">
+
+            <input type="button" value="Import" onclick="">
+            <input type="button" value="Export" onclick="">
+        </div>
+        <div class="table_users" style="text-align: center;">
+            <details>
+                <summary>Пользователи</summary>
+                <table id="users" style="margin: 0px auto;">
+                    <thead>
+                        <tr>
+                        <th scope="col">Имя</th>
+                        <th scope="col">Дата</th>
+                        <th scope="col">График</th>
+                        <th scope="col">Совпадение <br> Показать</th>
+                        <th scope="col">Удалить</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </details>
+        </div>
     </div>
     <div class="month-title" id="monthTitle"></div>
     <div style="text-align: center;">
         <p>Пользователь
-        <select id="names" name="names" style="text-align: center;" onclick="createCalendar()">
-            <option value="Clark">Clark</option>
-            <option value="Reklizon">Reklizon</option>
-            <option value="Diablo">Diablo</option>
+        <select id="names" name="names" style="text-align: center; width: 100px;" onclick="createCalendar()">
+
         </select>
         <button onclick="createCalendar()">Обновить</button>
         </p>
@@ -31,7 +59,9 @@
         <button onclick="previousMonth()">Предыдущий месяц</button>
         <button onclick="nextMonth()">Следующий месяц</button>
     </div>
+    
     <div class="calendar" id="calendar"></div> <!-- Контейнер для отображения календаря -->
-    <script src="scripts\date.js"></script>
+    
+    <script src="scripts\main.js"></script>
 </body>
 </html>

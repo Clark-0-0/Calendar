@@ -1,20 +1,4 @@
-var data_name_schedule = {
-    "Clark":{
-        "date":"21.03.2025",
-        "schedule":"2/2",
-        "month_count":{},
-    },
-    "Reklizon":{
-        "date":"17.03.2025",
-        "schedule":"3/2",
-        "month_count":{},
-    },
-    "Diablo":{
-        "date":"22.03.2025",
-        "schedule":"1/3",
-        "month_count":{},
-    },
-}
+var data_name_schedule = {}
 
 var grafik_name = {1:"утро\nс 8:00 до 16:00",2:"вечер\nс 16:00 до 00:00",3:"ночь\nс 00:00 до 8:00",4:"сутки",5:"день",6:"выходной",7:"ночь"}
 
@@ -31,7 +15,7 @@ let currentMonth = new Date().getMonth();
 let workingDayCounter = 0; // Счетчик рабочих дней
 let workingDayCounter3to2 = 0; // Счетчик рабочих дней
 let workDays, offDays; // Количество рабочих и выходных дней в графике
-
+console.log("test12433123")
 
 function generateCalendar(data_name){
     workingDayCounter = 0;
@@ -39,9 +23,9 @@ function generateCalendar(data_name){
     var date = data_name_schedule[data_name]["date"]
     setSchedule(data_name_schedule[data_name]["schedule"])
     const dateParts = date.split('.'); // Предполагаем формат YYYY-MM-DD
-    const year = parseInt(dateParts[0], 10);
+    const year = parseInt(dateParts[2], 10);
     const month = parseInt(dateParts[1], 10) - 1; // Месяцы в JavaScript начинаются с 0
-    const day = parseInt(dateParts[2], 10); // День
+    const day = parseInt(dateParts[0], 10); // День
 
 
 
@@ -220,103 +204,3 @@ function previousMonth() {
     }
     createCalendar();
 }
-
-
-
-
-
-
-
-
-
-
-
-
-// function createCalendar(year, month, startDay) {
-//     calendarElement.innerHTML = ''; // Очищаем предыдущий календарь
-//     const daysInMonth = new Date(year, month + 1, 0).getDate(); // Получаем количество дней в месяце
-//     const firstDay = new Date(year, month, 1).getDay(); // Получаем день недели для первого числа месяца
-
-//     // Добавляем пустые ячейки для дней до первого числа месяца
-//     for(let i = 0; i < 7; i++) {
-//         const emptyDiv = document.createElement('div');
-//         emptyDiv.classList.add('day'); // Добавляем класс для стилей
-//         calendarElement.appendChild(emptyDiv); // Добавляем пустую ячейку в календарь
-//         emptyDiv.innerText = day_name[i]; 
-
-//     } 
-//     for(let i = 1; i < firstDay; i++) {
-//         const emptyDiv = document.createElement('div');
-//         emptyDiv.classList.add('day'); // Добавляем класс для стилей
-//         calendarElement.appendChild(emptyDiv); // Добавляем пустую ячейку в календарь
-//     }
-
-//     // Цикл для добавления дней в календарь
-//     for(let day = 1; day <= daysInMonth; day++) {
-//         const dayDiv = document.createElement('div'); // Создаем элемент для дня
-//         dayDiv.classList.add('day'); // Добавляем класс для стилей
-//         dayDiv.innerText = day; // Устанавливаем текст в ячейку
-
-//         const date = new Date(year, month, day); // Создаем объект даты для текущего дня
-
-//         // Проверяем, если дата больше или равна дате начала
-//         if (date >= new Date(currentYear, currentMonth, 1)) {
-//             // Определяем, является ли текущий день рабочим или выходным
-//             if (workingDayCounter < workDays) {
-//                 dayDiv.classList.add('work'); // Добавляем класс для рабочего дня
-//                 workingDayCounter++; // Увеличиваем счетчик рабочих дней
-//             } else {
-//                 dayDiv.classList.add('off'); // Добавляем класс для выходного дня
-//                 if (workingDayCounter >= workDays + offDays - 1) {
-//                     workingDayCounter = 0; // Сбрасываем счетчик после полного цикла
-//                 } else {
-//                     workingDayCounter++; // Увеличиваем счетчик
-//                 }
-//             }
-//         } else {
-//             // Если дата меньше стартовой, просто добавляем ячейку без цвета
-//             dayDiv.classList.add('day');
-//         }
-
-//         calendarElement.appendChild(dayDiv); // Добавляем ячейку дня в календарь
-//     }
-
-//     // Устанавливаем название месяца
-//     monthTitleElement.innerText = `${new Intl.DateTimeFormat('ru-RU', { month: 'long' }).format(new Date(year, month))} ${year}`;
-// }
-
-
-// // Пример установки графика
-// setSchedule('2/2'); // Установите график перед созданием календаря
-// createCalendar(currentYear, currentMonth, workingDayCounter);
-
-
-// function updateCalendar() {
-//     currentYear = new Date().getFullYear();
-//     currentMonth = new Date().getMonth();
-//     workingDayCounter = 0; // Счетчик рабочих дней
-//     // Здесь вы можете добавить логику для обновления календаря
-//     // Например, если у вас есть поле для ввода даты, вы можете получить его значение
-//     const selectedDate = document.getElementById('startDateInput').value; // Предполагаем, что у вас есть input с id 'dateInput'
-//     var schedules = document.getElementById('schedule').value;
-//     setSchedule(schedules)
-    
-//     if (selectedDate) {
-//         const dateParts = selectedDate.split('-'); // Предполагаем формат YYYY-MM-DD
-//         const year = parseInt(dateParts[0], 10);
-//         const month = parseInt(dateParts[1], 10) - 1; // Месяцы в JavaScript начинаются с 0
-
-//         // Обновляем текущий год и месяц
-//         currentYear = year;
-//         currentMonth = month;
-
-//         // Создаем календарь для выбранной даты
-//         createCalendar(currentYear, currentMonth, workingDayCounter);
-//     } else {
-//         alert('Пожалуйста, выберите дату.');
-//     }
-// }
-
-
-// // Инициализация календаря с текущими значениями
-// createCalendar(currentYear, currentMonth, '2/2', new Date().toISOString().split('T')[0]);
