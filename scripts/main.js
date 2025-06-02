@@ -1,5 +1,6 @@
 var data_name_schedule = {}
 
+
 var grafik_name = {1:"утро\nс 8:00 до 16:00",2:"вечер\nс 16:00 до 00:00",3:"ночь\nс 00:00 до 8:00",4:"сутки",5:"день",6:"выходной",7:"ночь"}
 
 var day_name = ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"]
@@ -8,7 +9,8 @@ document.getElementById("add_date").value = new Date().toISOString().slice(0, 10
 
 const calendarElement = document.getElementById('calendar'); // Получаем элемент для календаря
 const monthTitleElement = document.getElementById('monthTitle'); // Получаем элемент для названия месяца
-
+var fileInput = document.getElementById('hiddenFileInput');
+read_function()
 let currentYear = new Date().getFullYear();
 let currentMonth = new Date().getMonth();
 let workingDayCounter = 0; // Счетчик рабочих дней
@@ -305,6 +307,7 @@ function add_user() {
                     if ((!(Object.keys(data_name_schedule).length > 0))){
                         calendarElement.innerHTML = '';
                     }
+                    write_data()
                     updateCalendar()
                 }
                 rowToDelete.remove();
@@ -335,8 +338,122 @@ function add_user() {
 }
 
 
-function remove_user(index) {
-    
+
+
+function export_data() {
+    // Сериализация объекта в JSON
+    const dataStr = JSON.stringify(data_name_schedule, null, 2); // красиво форматированный JSON
+
+    // Создаем Blob из строки
+    const blob = new Blob([dataStr], { type: 'application/json' });
+
+    // Создаем временную ссылку
+    const url = URL.createObjectURL(blob);
+
+    // Создаем временный элемент <a>
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'data.json'; // имя файла
+
+    // Инициируем скачивание
+    document.body.appendChild(a);
+    a.click();
+
+    // Удаляем временный элемент и освобождаем URL
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+};
+
+
+
+
+
+
+
+
+
+function updateImport() {
+    for (const user_id in data_name_schedule) {
+        const table = document.getElementById('users');
+
+        const newRow = document.createElement('tr');
+
+        // Связываем строку с id
+        newRow.dataset.id = user_id;
+
+        // Создаем ячейки
+        const nameCell = document.createElement('th');
+        nameCell.textContent = data_name_schedule[user_id]["name"];
+
+        const dateCell = document.createElement('td');
+        dateCell.textContent = data_name_schedule[user_id]["date"];
+
+        const scheduleCell = document.createElement('td');
+        scheduleCell.textContent = data_name_schedule[user_id]["schedule"];
+
+        // Кнопка "Редактировать"
+        const CheckboxCell = document.createElement('td');
+        const editCheckbox = document.createElement('input');
+        editCheckbox.type = 'checkbox';
+        editCheckbox.checked = data_name_schedule[user_id]["schedule_state"]
+        editCheckbox.style.margin = '0px';
+
+        editCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked; // текущее состояние
+            const row = this.closest('tr');
+            const id = row.dataset.id;
+
+            // Обновляем данные или просто выводим в консоль
+            if (data_name_schedule[id]) {
+                // Например, сохраняем состояние в объекте:
+                data_name_schedule[id].schedule_state = isChecked;
+                write_data()
+                updateCalendar() 
+            }
+        });
+
+        CheckboxCell.appendChild(editCheckbox);
+
+        // Кнопка "Удалить"
+        const deleteCell = document.createElement('td');
+        const deleteButton = document.createElement('input');
+        deleteButton.type = 'button';
+        deleteButton.value = 'Удалить';
+        deleteButton.style.margin = '0px';
+
+        // Обработчик удаления
+        deleteButton.addEventListener('click', function() {
+            const rowToDelete = this.closest('tr');
+            if (rowToDelete) {
+                const rowToDelete = this.closest('tr');
+                if (rowToDelete) {
+                    const idToRemove = rowToDelete.dataset.id;
+                    delete data_name_schedule[idToRemove]; // удаляем из объекта
+                    rowToDelete.remove();
+                    if ((!(Object.keys(data_name_schedule).length > 0))){
+                        calendarElement.innerHTML = '';
+                    }
+                    write_data()
+                    updateCalendar()
+                }
+                rowToDelete.remove();
+                console.log(data_name_schedule)
+            }
+        });
+
+        deleteCell.appendChild(deleteButton);
+
+        // Собираем строку
+        newRow.appendChild(nameCell);
+        newRow.appendChild(dateCell);
+        newRow.appendChild(scheduleCell);
+        newRow.appendChild(CheckboxCell);
+        newRow.appendChild(deleteCell);
+
+        // Добавляем строку в таблицу
+        table.querySelector('tbody').appendChild(newRow);
+    }
+    updateCalendar()
 }
 
 
@@ -369,6 +486,45 @@ function remove_user(index) {
 
 
 
+function import_data() {
+        fileInput.click();
+};
+
+function read_function(){
+    // При клике на кнопку вызываем диалог выбора файла
+    
+
+    // Обработка выбранного файла
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length === 0) {
+            console.log('Файл не выбран');
+            return;
+        }
+
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        console.log(12)
+        reader.onload = function(e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                if (typeof importedData === 'object' && importedData !== null) {
+                    // Обновляем ваш объект
+                    data_name_schedule = importedData;
+                    console.log(data_name_schedule)
+                    updateImport()
+                    write_data()
+                    console.log('Данные успешно импортированы!');
+                } else {
+                    console.log('Некорректный формат файла.');
+                }
+            } catch (err) {
+                console.log('Ошибка при чтении файла: ' + err.message);
+            }
+        };
+
+        reader.readAsText(file);
+    });
+}
 
 
 
@@ -396,26 +552,7 @@ function remove_user(index) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+ 
 
 
 
@@ -486,6 +623,7 @@ function read_data() {
                         if ((!(Object.keys(data_name_schedule).length > 0))){
                             calendarElement.innerHTML = '';
                         }
+                        write_data()
                         updateCalendar()
                     }
                     rowToDelete.remove();
