@@ -509,6 +509,7 @@ function read_function(){
                 const importedData = JSON.parse(e.target.result);
                 if (typeof importedData === 'object' && importedData !== null) {
                     // Обновляем ваш объект
+                    data_name_schedule = {}
                     data_name_schedule = importedData;
                     console.log(data_name_schedule)
                     updateImport()
