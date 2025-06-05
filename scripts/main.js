@@ -1,651 +1,317 @@
-var data_name_schedule = {}
+// Константы и глобальные переменные
+const SCHEDULE_TYPES = {
+  '2/2': { workDays: 2, offDays: 2 },
+  '3/2': { workDays: 3, offDays: 2 },
+  '1/3': { workDays: 1, offDays: 3 }
+};
 
+const SHIFT_NAMES = {
+  1: "утро\nс 8:00 до 16:00",
+  2: "вечер\nс 16:00 до 00:00",
+  3: "ночь\nс 00:00 до 8:00",
+  4: "сутки",
+  5: "день",
+  6: "выходной",
+  7: "ночь"
+};
 
-var grafik_name = {1:"утро\nс 8:00 до 16:00",2:"вечер\nс 16:00 до 00:00",3:"ночь\nс 00:00 до 8:00",4:"сутки",5:"день",6:"выходной",7:"ночь"}
+const DAY_NAMES = ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"];
 
-var day_name = ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"]
-var global_month = new Date().getMonth();
-document.getElementById("add_date").value = new Date().toISOString().slice(0, 10);
-
-const calendarElement = document.getElementById('calendar'); // Получаем элемент для календаря
-const monthTitleElement = document.getElementById('monthTitle'); // Получаем элемент для названия месяца
-var fileInput = document.getElementById('hiddenFileInput');
-read_function()
+let data_name_schedule = {};
+let global_month = new Date().getMonth();
 let currentYear = new Date().getFullYear();
-let currentMonth = new Date().getMonth();
-let workingDayCounter = 0; // Счетчик рабочих дней
-let workingDayCounter3to2 = 0; // Счетчик рабочих дней
-let workDays, offDays; // Количество рабочих и выходных дней в графике
 
-read_data()
+// DOM элементы
+const calendarElement = document.getElementById('calendar');
+const monthTitleElement = document.getElementById('monthTitle');
+const fileInput = document.getElementById('hiddenFileInput');
+const dateInput = document.getElementById('add_date');
 
-function generateCalendar(user_id){
-    workingDayCounter = 0;
-    workingDayCounter3to2 = 0;
-    var date = data_name_schedule[user_id]["date"];
-    setSchedule(data_name_schedule[user_id]["schedule"]);
-    const dateParts = date.split('-'); // Предполагаем формат YYYY-MM-DD
-    const year = parseInt(dateParts[0], 10);
-    const month = parseInt(dateParts[1], 10) - 1; // Месяцы в JavaScript начинаются с 0
-    const day = parseInt(dateParts[2], 10); // День
+// Инициализация
+dateInput.value = new Date().toISOString().slice(0, 10);
+read_data();
 
+// Основные функции
+function generateCalendar(user_id) {
+  const userData = data_name_schedule[user_id];
+  if (!userData) return;
 
+  const { date, schedule } = userData;
+  const { workDays, offDays } = SCHEDULE_TYPES[schedule] || { workDays: 0, offDays: 0 };
+  
+  const [year, month, day] = date.split('-').map(Number);
+  userData.month_count = {};
 
+  let workingDayCounter = 0;
+  let workingDayCounter3to2 = 0;
 
-    // Обновляем текущий год и месяц
-    currentYear = year;
-    currentMonth = month;
-    for (let i = 0; i < (12-month); i++) {
-        //console.log(i+month)
-        data_name_schedule[user_id]["month_count"][i+month] = {}
-        //console.log(`${new Intl.DateTimeFormat('ru-RU', { month: 'long' }).format(new Date(year, i+month))} ${year}`)
-        const daysInMonth = new Date(year, month + i + 1, 0).getDate(); // Получаем количество дней в месяце
-        for (let days = 0; days < daysInMonth; days++) {
-            data_name_schedule[user_id]["month_count"][i+month][days+1] = {};
-            //console.log(month,i+month)
-            if (days + 1 >= day || month < i+month) {
-                if (workingDayCounter < workDays) {
-                    data_name_schedule[user_id]["month_count"][i+month][days+1]["style"] = "work"
-                    workingDayCounter++; // Увеличиваем счетчик рабочих дней
-                    
-                    if (data_name_schedule[user_id]["schedule"] == "2/2"){
-                        workingDayCounter3to2++;
-                        if (workingDayCounter3to2 == 3){
-                            workingDayCounter3to2 = 1
-                        }
-                        if (workingDayCounter3to2 == 1){
-                            data_name_schedule[user_id]["month_count"][i+month][days+1]["name_day"] = grafik_name[5]
-                        } else {
-                            data_name_schedule[user_id]["month_count"][i+month][days+1]["name_day"] = grafik_name[7]
-                        }
-                    }
-                    if (data_name_schedule[user_id]["schedule"] == "3/2"){
-                        workingDayCounter3to2++;
-                        if (workingDayCounter3to2 == 10){
-                            workingDayCounter3to2 = 1
-                        }
-                        if (workingDayCounter3to2 < 4){
-                            data_name_schedule[user_id]["month_count"][i+month][days+1]["name_day"] = grafik_name[1]
-                        } else if (workingDayCounter3to2 < 7){
-                            data_name_schedule[user_id]["month_count"][i+month][days+1]["name_day"] = grafik_name[2]
-                        } else if (workingDayCounter3to2 < 10){
-                            data_name_schedule[user_id]["month_count"][i+month][days+1]["name_day"] = grafik_name[3]
-                        }
-                    }
-                    if (data_name_schedule[user_id]["schedule"] == "1/3"){
-                        data_name_schedule[user_id]["month_count"][i+month][days+1]["name_day"] = grafik_name[4]
-                    }
-                } else {
-                    data_name_schedule[user_id]["month_count"][i+month][days+1]["style"] = "off"
-                    data_name_schedule[user_id]["month_count"][i+month][days+1]["name_day"] = grafik_name[6]
-                    if (workingDayCounter >= workDays + offDays - 1) {
-                        workingDayCounter = 0; // Сбрасываем счетчик после полного цикла
-                        
-                    } else {
-                        workingDayCounter++; // Увеличиваем счетчик
-                    }
-                }
-            } else {
-                data_name_schedule[user_id]["month_count"][i+month][days+1] = "day"
-            }
+  for (let m = month - 1; m < 12; m++) {
+    userData.month_count[m] = {};
+    const daysInMonth = new Date(year, m + 1, 0).getDate();
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      userData.month_count[m][d] = {};
+      
+      if (d >= day || m > month - 1) {
+        if (workingDayCounter < workDays) {
+          userData.month_count[m][d].style = "work";
+          workingDayCounter++;
+          
+          if (schedule === "2/2") {
+            workingDayCounter3to2 = (workingDayCounter3to2 % 2) + 1;
+            userData.month_count[m][d].name_day = workingDayCounter3to2 === 1 ? 
+              SHIFT_NAMES[5] : SHIFT_NAMES[7];
+          } 
+          else if (schedule === "3/2") {
+            workingDayCounter3to2 = (workingDayCounter3to2 % 9) + 1;
+            userData.month_count[m][d].name_day = 
+              workingDayCounter3to2 < 4 ? SHIFT_NAMES[1] :
+              workingDayCounter3to2 < 7 ? SHIFT_NAMES[2] : SHIFT_NAMES[3];
+          }
+          else if (schedule === "1/3") {
+            userData.month_count[m][d].name_day = SHIFT_NAMES[4];
+          }
+        } else {
+          userData.month_count[m][d].style = "off";
+          userData.month_count[m][d].name_day = SHIFT_NAMES[6];
+          workingDayCounter = workingDayCounter >= workDays + offDays - 1 ? 0 : workingDayCounter + 1;
         }
+      } else {
+        userData.month_count[m][d] = "day";
+      }
     }
+  }
 }
 
+function createCalendar() {
+  const user_id = document.getElementById('names').value;
+  const userData = data_name_schedule[user_id];
+  if (!userData) return;
 
+  const [year, month] = userData.date.split('-').map(Number);
+  const firstDay = new Date(year, global_month, 1).getDay();
 
-function createCalendar(){
-    var user_id = document.getElementById('names').value;
-    var date = data_name_schedule[user_id]["date"].toString()
-    const dateParts = date.split('-'); // Предполагаем формат YYYY-MM-DD
-    const year = parseInt(dateParts[0], 10);
-    const month = parseInt(dateParts[1], 10) - 1; // Месяцы в JavaScript начинаются с 0
-    const day = parseInt(dateParts[2], 10); // День
+  // Очистка календаря
+  calendarElement.innerHTML = '';
+  
+  // Заголовки дней недели
+  DAY_NAMES.forEach(day => {
+    const dayDiv = document.createElement('div');
+    dayDiv.classList.add('day');
+    dayDiv.textContent = day;
+    calendarElement.appendChild(dayDiv);
+  });
 
+  // Пустые ячейки перед первым днем месяца
+  for (let i = 0; i < (firstDay + 6) % 7; i++) {
+    const emptyDiv = document.createElement('div');
+    emptyDiv.classList.add('day');
+    calendarElement.appendChild(emptyDiv);
+  }
 
-    calendarElement.innerHTML = ''; // Очищаем предыдущий календарь
+  // Дни месяца
+  for (const day in userData.month_count[global_month]) {
+    const dayData = userData.month_count[global_month][day];
+    if (typeof dayData === 'string') continue;
 
-    var firstDay = new Date(year, global_month, 1).getDay(); // Получаем день недели для первого числа месяца
-    console.log(firstDay,global_month)
-
-    monthTitleElement.innerText = `${new Intl.DateTimeFormat('ru-RU', { month: 'long' }).format(new Date(year, global_month))} ${year}`;
-    for(let i = 0; i < 7; i++) {
-        const emptyDiv = document.createElement('div');
-        emptyDiv.classList.add('day'); // Добавляем класс для стилей
-        calendarElement.appendChild(emptyDiv); // Добавляем пустую ячейку в календарь
-        emptyDiv.innerText = day_name[i]; 
+    const dayDiv = document.createElement('div');
+    dayDiv.classList.add('day', dayData.style);
+    
+    // Проверка совпадений выходных дней
+    const activeUsers = Object.values(data_name_schedule).filter(u => u.schedule_state);
+    const isCoincidence = activeUsers.length > 1 && 
+      activeUsers.every(u => u.month_count[global_month]?.[day]?.style === "off");
+    
+    if (isCoincidence) {
+      dayDiv.classList.add('coincidence');
+      dayDiv.textContent = `${day}\n${dayData.name_day}\nсовпадение`;
+    } else {
+      dayDiv.textContent = `${day}\n${dayData.name_day}`;
     }
+    
+    calendarElement.appendChild(dayDiv);
+  }
 
-
-    for(let i = 0; i < (firstDay + 6) % 7; i++) {
-        console.log("test ", i)
-        const emptyDiv = document.createElement('div');
-        emptyDiv.classList.add('day'); // Можно добавить класс для стилизации
-        calendarElement.appendChild(emptyDiv);
-    }
-
-    for (const key in data_name_schedule[user_id]["month_count"][global_month]) {
-        const dayDiv = document.createElement('div'); // Создаем элемент для дня
-        dayDiv.classList.add('day');
-        dayDiv.classList.add(data_name_schedule[user_id]["month_count"][global_month][key]["style"]); // Добавляем класс для стилей
-        var coincidence = true;
-        var num_schedule_state = 0
-        for (const user_id in data_name_schedule) {
-            if (data_name_schedule[user_id]["schedule_state"]){
-                num_schedule_state += 1
-                if (!(data_name_schedule[user_id]["month_count"][global_month][key]["style"] == "off")){
-                    coincidence = false;
-                    break
-                }
-            }
-        }
-        if (coincidence && num_schedule_state > 1){
-            dayDiv.classList.add('coincidence');
-            dayDiv.innerText = key + "\n" + data_name_schedule[user_id]["month_count"][global_month][key]["name_day"] + "\n совпадение"; // Устанавливаем текст в ячейку
-        }else {
-            dayDiv.innerText = key + "\n" + data_name_schedule[user_id]["month_count"][global_month][key]["name_day"]; // Устанавливаем текст в ячейку
-        }
-        calendarElement.appendChild(dayDiv); // Добавляем ячейку дня в календарь
-    }
+  // Обновление заголовка месяца
+  monthTitleElement.textContent = `${new Intl.DateTimeFormat('ru-RU', { month: 'long' })
+    .format(new Date(year, global_month))} ${year}`;
 }
-
-
 
 function updateCalendar() {
-    global_month = new Date().getMonth();
-    var users_name_id = document.getElementById('names')
-    users_name_id.innerHTML = ""
-    for (const user_id in data_name_schedule) { 
-        data_name_schedule[user_id]["month_count"] = {}
-        const option = document.createElement('option');
-        option.value = user_id;
-        option.textContent = data_name_schedule[user_id]["name"];
-        users_name_id.appendChild(option)
-        generateCalendar(user_id)
-    }
-    createCalendar()
+  global_month = new Date().getMonth();
+  const usersSelect = document.getElementById('names');
+  
+  usersSelect.innerHTML = '';
+  for (const user_id in data_name_schedule) { 
+    data_name_schedule[user_id].month_count = {};
+    const option = new Option(data_name_schedule[user_id].name, user_id);
+    usersSelect.add(option);
+    generateCalendar(user_id);
+  }
+  
+  createCalendar();
 }
 
+// Функции для работы с UI
+function addUserRow(user_id, userData) {
+  const table = document.getElementById('users').querySelector('tbody');
+  const row = document.createElement('tr');
+  row.dataset.id = user_id;
 
+  // Имя
+  const nameCell = document.createElement('th');
+  nameCell.textContent = userData.name;
+  row.appendChild(nameCell);
 
+  // Дата
+  const dateCell = document.createElement('td');
+  dateCell.textContent = userData.date;
+  row.appendChild(dateCell);
 
+  // График
+  const scheduleCell = document.createElement('td');
+  scheduleCell.textContent = userData.schedule;
+  row.appendChild(scheduleCell);
 
+  // Чекбокс активности
+  const checkboxCell = document.createElement('td');
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.checked = userData.schedule_state;
+  checkbox.style.margin = '0';
+  checkbox.addEventListener('change', () => {
+    userData.schedule_state = checkbox.checked;
+    write_data();
+    updateCalendar();
+  });
+  checkboxCell.appendChild(checkbox);
+  row.appendChild(checkboxCell);
 
-
-
-
-function setSchedule(schedule) {
-    if (schedule === '2/2') {
-        workDays = 2;
-        offDays = 2;
-    } else if (schedule === '3/2') {
-        workDays = 3;
-        offDays = 2;
-    } else if (schedule === '1/3') {
-        workDays = 1;
-        offDays = 3;
-    } else {
-        workDays = 0;
-        offDays = 0;
+  // Кнопка удаления
+  const deleteCell = document.createElement('td');
+  const deleteButton = document.createElement('input');
+  deleteButton.type = 'button';
+  deleteButton.value = 'Удалить';
+  deleteButton.style.margin = '0';
+  deleteButton.addEventListener('click', () => {
+    delete data_name_schedule[user_id];
+    row.remove();
+    if (Object.keys(data_name_schedule).length === 0) {
+      calendarElement.innerHTML = '';
     }
+    write_data();
+    updateCalendar();
+  });
+  deleteCell.appendChild(deleteButton);
+  row.appendChild(deleteCell);
+
+  table.appendChild(row);
 }
-// Функция для определения, является ли день рабочим
-function isWorkingDay(schedule, dayCounter) {
-    if (schedule === '2/2') {
-        console.log(dayCounter % 4 < 2,"test")
-        return dayCounter % 4 < 2; // 2 рабочих, 2 выходных
-    } else if (schedule === '3/2') {
-        return dayCounter % 5 < 3; // 3 рабочих, 2 выходных
-    } else if (schedule === '1/3') {
-        return dayCounter % 4 < 1; // 1 рабочий, 3 выходных
-    }
-    return false; // Если график не распознан, возвращаем false
-}
-function nextMonth() {
-    global_month++;
-    if (global_month > 11) {
-        global_month = 0;
-        currentYear++;
-    }
-    createCalendar();
-}
-
-function previousMonth() {
-    global_month--;
-    if (global_month < 0) {
-        global_month = 11;
-        currentYear--;
-    }
-    createCalendar();
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 function add_user() {
-    const name = document.getElementById("add_name").value;
-    const date = document.getElementById("add_date").value;
-    const schedule = document.getElementById("add_schedule").value;
+  const name = document.getElementById("add_name").value.trim();
+  const date = document.getElementById("add_date").value;
+  const schedule = document.getElementById("add_schedule").value;
 
-    if (name && date && schedule) {
-        const table = document.getElementById('users');
+  if (!name || !date || !schedule) return;
 
-        // Генерируем уникальный id на основе текущего времени
-        const uniqueId = Date.now(); // число миллисекунд с 1970 года
+  const user_id = Date.now();
+  const userData = {
+    name,
+    date,
+    schedule,
+    month_count: {},
+    schedule_state: true
+  };
 
-        const dataItem = {"name":name, "date":date, "schedule":schedule, "month_count":{},"schedule_state":true};
-        data_name_schedule[uniqueId] = dataItem
+  data_name_schedule[user_id] = userData;
+  addUserRow(user_id, userData);
 
-        const newRow = document.createElement('tr');
-
-        // Связываем строку с id
-        newRow.dataset.id = uniqueId;
-
-        // Создаем ячейки
-        const nameCell = document.createElement('th');
-        nameCell.textContent = dataItem.name;
-
-        const dateCell = document.createElement('td');
-        dateCell.textContent = dataItem.date;
-
-        const scheduleCell = document.createElement('td');
-        scheduleCell.textContent = dataItem.schedule;
-
-        // Кнопка "Редактировать"
-        const CheckboxCell = document.createElement('td');
-        const editCheckbox = document.createElement('input');
-        editCheckbox.type = 'checkbox';
-        editCheckbox.checked = dataItem.schedule_state
-        editCheckbox.style.margin = '0px';
-
-        editCheckbox.addEventListener('change', function() {
-            const isChecked = this.checked; // текущее состояние
-            const row = this.closest('tr');
-            const id = row.dataset.id;
-
-            // Обновляем данные или просто выводим в консоль
-            if (data_name_schedule[id]) {
-                // Например, сохраняем состояние в объекте:
-                data_name_schedule[id].schedule_state = isChecked;
-                write_data()
-                updateCalendar() 
-            }
-        });
-
-        CheckboxCell.appendChild(editCheckbox);
-
-        // Кнопка "Удалить"
-        const deleteCell = document.createElement('td');
-        const deleteButton = document.createElement('input');
-        deleteButton.type = 'button';
-        deleteButton.value = 'Удалить';
-        deleteButton.style.margin = '0px';
-
-        // Обработчик удаления
-        deleteButton.addEventListener('click', function() {
-            const rowToDelete = this.closest('tr');
-            if (rowToDelete) {
-                const rowToDelete = this.closest('tr');
-                if (rowToDelete) {
-                    const idToRemove = rowToDelete.dataset.id;
-                    delete data_name_schedule[idToRemove]; // удаляем из объекта
-                    rowToDelete.remove();
-                    if ((!(Object.keys(data_name_schedule).length > 0))){
-                        calendarElement.innerHTML = '';
-                    }
-                    write_data()
-                    updateCalendar()
-                }
-                rowToDelete.remove();
-                console.log(data_name_schedule)
-            }
-        });
-
-        deleteCell.appendChild(deleteButton);
-
-        // Собираем строку
-        newRow.appendChild(nameCell);
-        newRow.appendChild(dateCell);
-        newRow.appendChild(scheduleCell);
-        newRow.appendChild(CheckboxCell);
-        newRow.appendChild(deleteCell);
-
-        // Добавляем строку в таблицу
-        table.querySelector('tbody').appendChild(newRow);
-        document.getElementById("add_date").value = new Date().toISOString().slice(0, 10);
-        updateCalendar()
-        document.getElementById("add_name").value = ""
-        write_data()
-    }
-
-
-
-
+  // Сброс формы
+  document.getElementById("add_name").value = "";
+  document.getElementById("add_date").value = new Date().toISOString().slice(0, 10);
+  
+  write_data();
+  updateCalendar();
 }
 
-
-
-
+// Функции для работы с данными
 function export_data() {
-    // Сериализация объекта в JSON
-    const dataStr = JSON.stringify(data_name_schedule, null, 2); // красиво форматированный JSON
-
-    // Создаем Blob из строки
-    const blob = new Blob([dataStr], { type: 'application/json' });
-
-    // Создаем временную ссылку
-    const url = URL.createObjectURL(blob);
-
-    // Создаем временный элемент <a>
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'data.json'; // имя файла
-
-    // Инициируем скачивание
-    document.body.appendChild(a);
-    a.click();
-
-    // Удаляем временный элемент и освобождаем URL
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-};
-
-
-
-
-
-
-
-
-
-function updateImport() {
-    for (const user_id in data_name_schedule) {
-        const table = document.getElementById('users');
-
-        const newRow = document.createElement('tr');
-
-        // Связываем строку с id
-        newRow.dataset.id = user_id;
-
-        // Создаем ячейки
-        const nameCell = document.createElement('th');
-        nameCell.textContent = data_name_schedule[user_id]["name"];
-
-        const dateCell = document.createElement('td');
-        dateCell.textContent = data_name_schedule[user_id]["date"];
-
-        const scheduleCell = document.createElement('td');
-        scheduleCell.textContent = data_name_schedule[user_id]["schedule"];
-
-        // Кнопка "Редактировать"
-        const CheckboxCell = document.createElement('td');
-        const editCheckbox = document.createElement('input');
-        editCheckbox.type = 'checkbox';
-        editCheckbox.checked = data_name_schedule[user_id]["schedule_state"]
-        editCheckbox.style.margin = '0px';
-
-        editCheckbox.addEventListener('change', function() {
-            const isChecked = this.checked; // текущее состояние
-            const row = this.closest('tr');
-            const id = row.dataset.id;
-
-            // Обновляем данные или просто выводим в консоль
-            if (data_name_schedule[id]) {
-                // Например, сохраняем состояние в объекте:
-                data_name_schedule[id].schedule_state = isChecked;
-                write_data()
-                updateCalendar() 
-            }
-        });
-
-        CheckboxCell.appendChild(editCheckbox);
-
-        // Кнопка "Удалить"
-        const deleteCell = document.createElement('td');
-        const deleteButton = document.createElement('input');
-        deleteButton.type = 'button';
-        deleteButton.value = 'Удалить';
-        deleteButton.style.margin = '0px';
-
-        // Обработчик удаления
-        deleteButton.addEventListener('click', function() {
-            const rowToDelete = this.closest('tr');
-            if (rowToDelete) {
-                const rowToDelete = this.closest('tr');
-                if (rowToDelete) {
-                    const idToRemove = rowToDelete.dataset.id;
-                    delete data_name_schedule[idToRemove]; // удаляем из объекта
-                    rowToDelete.remove();
-                    if ((!(Object.keys(data_name_schedule).length > 0))){
-                        calendarElement.innerHTML = '';
-                    }
-                    write_data()
-                    updateCalendar()
-                }
-                rowToDelete.remove();
-                console.log(data_name_schedule)
-            }
-        });
-
-        deleteCell.appendChild(deleteButton);
-
-        // Собираем строку
-        newRow.appendChild(nameCell);
-        newRow.appendChild(dateCell);
-        newRow.appendChild(scheduleCell);
-        newRow.appendChild(CheckboxCell);
-        newRow.appendChild(deleteCell);
-
-        // Добавляем строку в таблицу
-        table.querySelector('tbody').appendChild(newRow);
-    }
-    updateCalendar()
+  const dataStr = JSON.stringify(data_name_schedule, null, 2);
+  const blob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'work_schedule.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 function import_data() {
-        fileInput.click();
-};
-
-function read_function(){
-    // При клике на кнопку вызываем диалог выбора файла
-    
-
-    // Обработка выбранного файла
-    fileInput.addEventListener('change', () => {
-        if (fileInput.files.length === 0) {
-            console.log('Файл не выбран');
-            return;
-        }
-
-        const file = fileInput.files[0];
-        const reader = new FileReader();
-        console.log(12)
-        reader.onload = function(e) {
-            try {
-                const importedData = JSON.parse(e.target.result);
-                if (typeof importedData === 'object' && importedData !== null) {
-                    // Обновляем ваш объект
-                    data_name_schedule = {}
-                    data_name_schedule = importedData;
-                    console.log(data_name_schedule)
-                    updateImport()
-                    write_data()
-                    console.log('Данные успешно импортированы!');
-                } else {
-                    console.log('Некорректный формат файла.');
-                }
-            } catch (err) {
-                console.log('Ошибка при чтении файла: ' + err.message);
-            }
-        };
-
-        reader.readAsText(file);
-    });
+  fileInput.click();
 }
 
+function read_function() {
+  fileInput.addEventListener('change', () => {
+    if (!fileInput.files.length) return;
 
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const importedData = JSON.parse(e.target.result);
+        if (importedData && typeof importedData === 'object') {
+          data_name_schedule = importedData;
+          updateImport();
+          write_data();
+        }
+      } catch (err) {
+        console.error('Ошибка при чтении файла:', err);
+      }
+    };
+    reader.readAsText(fileInput.files[0]);
+  });
+}
 
+function updateImport() {
+  const table = document.getElementById('users').querySelector('tbody');
+  table.innerHTML = '';
+  
+  for (const user_id in data_name_schedule) {
+    addUserRow(user_id, data_name_schedule[user_id]);
+  }
+  
+  updateCalendar();
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- 
-
-
-
+// Функции для работы с localStorage
 function write_data() {
-    localStorage.setItem('data_name_schedule', JSON.stringify(data_name_schedule));   
+  localStorage.setItem('data_name_schedule', JSON.stringify(data_name_schedule));
 }
 
 function read_data() {
-    if (localStorage.getItem('data_name_schedule')) {
-        data_name_schedule = JSON.parse(localStorage.getItem('data_name_schedule'));
-        for (const user_id in data_name_schedule) {
-            const table = document.getElementById('users');
+  const storedData = localStorage.getItem('data_name_schedule');
+  if (!storedData) return;
 
-            const newRow = document.createElement('tr');
-
-            // Связываем строку с id
-            newRow.dataset.id = user_id;
-
-            // Создаем ячейки
-            const nameCell = document.createElement('th');
-            nameCell.textContent = data_name_schedule[user_id]["name"];
-
-            const dateCell = document.createElement('td');
-            dateCell.textContent = data_name_schedule[user_id]["date"];
-
-            const scheduleCell = document.createElement('td');
-            scheduleCell.textContent = data_name_schedule[user_id]["schedule"];
-
-            // Кнопка "Редактировать"
-            const CheckboxCell = document.createElement('td');
-            const editCheckbox = document.createElement('input');
-            editCheckbox.type = 'checkbox';
-            editCheckbox.checked = data_name_schedule[user_id]["schedule_state"]
-            editCheckbox.style.margin = '0px';
-
-            editCheckbox.addEventListener('change', function() {
-                const isChecked = this.checked; // текущее состояние
-                const row = this.closest('tr');
-                const id = row.dataset.id;
-
-                // Обновляем данные или просто выводим в консоль
-                if (data_name_schedule[id]) {
-                    // Например, сохраняем состояние в объекте:
-                    data_name_schedule[id].schedule_state = isChecked;
-                    write_data()
-                    updateCalendar() 
-                }
-            });
-
-            CheckboxCell.appendChild(editCheckbox);
-
-            // Кнопка "Удалить"
-            const deleteCell = document.createElement('td');
-            const deleteButton = document.createElement('input');
-            deleteButton.type = 'button';
-            deleteButton.value = 'Удалить';
-            deleteButton.style.margin = '0px';
-
-            // Обработчик удаления
-            deleteButton.addEventListener('click', function() {
-                const rowToDelete = this.closest('tr');
-                if (rowToDelete) {
-                    const rowToDelete = this.closest('tr');
-                    if (rowToDelete) {
-                        const idToRemove = rowToDelete.dataset.id;
-                        delete data_name_schedule[idToRemove]; // удаляем из объекта
-                        rowToDelete.remove();
-                        if ((!(Object.keys(data_name_schedule).length > 0))){
-                            calendarElement.innerHTML = '';
-                        }
-                        write_data()
-                        updateCalendar()
-                    }
-                    rowToDelete.remove();
-                    console.log(data_name_schedule)
-                }
-            });
-
-            deleteCell.appendChild(deleteButton);
-
-            // Собираем строку
-            newRow.appendChild(nameCell);
-            newRow.appendChild(dateCell);
-            newRow.appendChild(scheduleCell);
-            newRow.appendChild(CheckboxCell);
-            newRow.appendChild(deleteCell);
-
-            // Добавляем строку в таблицу
-            table.querySelector('tbody').appendChild(newRow);
-        }
-        updateCalendar()
-    }
+  try {
+    data_name_schedule = JSON.parse(storedData);
+    updateImport();
+  } catch (err) {
+    console.error('Ошибка при чтении данных:', err);
+  }
 }
 
+// Навигация по месяцам
+function nextMonth() {
+  global_month = (global_month + 1) % 12;
+  if (global_month === 0) currentYear++;
+  createCalendar();
+}
 
+function previousMonth() {
+  global_month = (global_month - 1 + 12) % 12;
+  if (global_month === 11) currentYear--;
+  createCalendar();
+}
