@@ -315,3 +315,49 @@ function previousMonth() {
   if (global_month === 11) currentYear--;
   createCalendar();
 }
+
+// Инициализация переключателя таблицы
+function initTableToggle() {
+  const userListHeader = document.querySelector('.user-list h2');
+  const userListSection = document.querySelector('.user-list');
+  
+  userListHeader.addEventListener('click', () => {
+    userListSection.classList.toggle('collapsed');
+    const icon = userListHeader.querySelector('.toggle-icon');
+    if (userListSection.classList.contains('collapsed')) {
+      icon.classList.replace('fa-chevron-down', 'fa-chevron-right');
+    } else {
+      icon.classList.replace('fa-chevron-right', 'fa-chevron-down');
+    }
+  });
+}
+
+// Оптимизация для мобильных устройств
+function optimizeForMobile() {
+  // Увеличиваем область клика для кнопок
+  document.querySelectorAll('.btn').forEach(btn => {
+    btn.style.minHeight = '44px';
+  });
+  
+  // Оптимизация ввода даты
+  if ('ontouchstart' in window) {
+    dateInput.type = 'date';
+  } else {
+    dateInput.type = 'text';
+    dateInput.addEventListener('focus', () => {
+      dateInput.type = 'date';
+    });
+  }
+  
+  // Улучшение таблицы для мобильных
+  const tableContainer = document.querySelector('.table-container');
+  tableContainer.style.overflowX = 'auto';
+  tableContainer.style.webkitOverflowScrolling = 'touch';
+}
+
+// Вызываем при загрузке
+document.addEventListener('DOMContentLoaded', () => {
+  optimizeForMobile();
+  initTableToggle();
+  read_function();
+});
