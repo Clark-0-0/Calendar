@@ -112,7 +112,7 @@ function createCalendar() {
   // Дни месяца
   for (const day in userData.month_count[global_month]) {
     const dayData = userData.month_count[global_month][day];
-    if (typeof dayData === 'string') continue;
+    //if (typeof dayData === 'string') continue;
 
     const dayDiv = document.createElement('div');
     dayDiv.classList.add('day', dayData.style);
@@ -360,4 +360,5 @@ document.addEventListener('DOMContentLoaded', () => {
   optimizeForMobile();
   initTableToggle();
   read_function();
+
 });
