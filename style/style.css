@@ -405,8 +405,11 @@ input[type="text"]:focus, select:focus, input[type="date"]:focus {
     border-radius: 4px;
     font-weight: 600;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column; /* Меняем направление на колонку, чтобы имя и время/название смены были на разных строках */
+    align-items: flex-start;
+    gap: 1px;
+    white-space: normal;     /* Разрешаем перенос текста на новую строку */
+    word-break: break-word;  /* Переносим длинные слова при необходимости */
 }
 
 .shift-badge.work { background: rgba(37, 99, 235, 0.25); color: #93c5fd; border-left: 3px solid var(--c-work); }
@@ -498,9 +501,6 @@ input[type="text"]:focus, select:focus, input[type="date"]:focus {
         padding: 8px 0;
     }
 
-    .days-grid {
-        grid-auto-rows: minmax(70px, 1fr);
-    }
 
     .calendar-day {
         padding: 3px;
@@ -510,17 +510,28 @@ input[type="text"]:focus, select:focus, input[type="date"]:focus {
     .day-number {
         font-size: 0.75rem;
     }
+    
+    .days-grid {
+        grid-auto-rows: minmax(85px, 1fr); /* Немного увеличиваем минимальную высоту ячейки для переносов */
+    }
 
+    .calendar-day {
+        padding: 4px;
+        gap: 3px;
+    }
     .shifts-container {
-        max-height: 55px;
-        gap: 2px;
+        max-height: 65px;
+        gap: 3px;
+        overflow-y: auto; /* Скролл на случай, если смен на один день выйдет слишком много */
     }
 
     .shift-badge {
-        font-size: 0.55rem;
+        font-size: 0.6rem;
         padding: 2px 4px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        flex-direction: column; /* Имя пользователя и тип смены располагаются друг под другом */
+        align-items: flex-start;
+        white-space: normal;    /* Разрешаем перенос текста на новую строку */
+        word-break: break-word; /* Корректный перенос длинных слов */
+        line-height: 1.2;
     }
 }
