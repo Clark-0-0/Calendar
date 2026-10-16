@@ -228,8 +228,9 @@ input[type="text"]:focus, select:focus, input[type="date"]:focus {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    max-height: 130px;
-    overflow-y: auto;
+    max-height: 140px; /* Ограничиваем высоту блока (примерно на 3-4 пользователя) */
+    overflow-y: auto;  /* Включаем вертикальную прокрутку при превышении высоты */
+    padding-right: 4px; /* Небольшой отступ, чтобы скроллбар не наезжал на текст */
 }
 
 .checkbox-label {
