@@ -1,364 +1,468 @@
-// Константы и глобальные переменные
-const SCHEDULE_TYPES = {
-  '2/2': { workDays: 2, offDays: 2 },
-  '3/2': { workDays: 3, offDays: 2 },
-  '1/3': { workDays: 1, offDays: 3 }
-};
+// Состояние приложения
+let users = JSON.parse(localStorage.getItem('shift_users')) || [];
+let currentDate = new Date();
+let selectedUserIndicesForCompare = [];
 
-const SHIFT_NAMES = {
-  1: "утро\nс 8:00 до 16:00",
-  2: "вечер\nс 16:00 до 00:00",
-  3: "ночь\nс 00:00 до 8:00",
-  4: "сутки",
-  5: "день",
-  6: "выходной",
-  7: "ночь"
-};
+// DOM Элементы
+const usersListEl = document.getElementById('users-list');
+const profileForm = document.getElementById('profile-form');
+const usernameInput = document.getElementById('username');
+const scheduleTypeSelect = document.getElementById('schedule-type');
+const startDateInput = document.getElementById('start-date');
+const editIndexInput = document.getElementById('edit-index');
+const saveBtn = document.getElementById('save-btn');
+const cancelEditBtn = document.getElementById('cancel-edit');
 
-const DAY_NAMES = ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"];
+const monthSelectEl = document.getElementById('month-select');
+const yearSelectEl = document.getElementById('year-select');
+const calendarDaysEl = document.getElementById('calendar-days');
+const prevMonthBtn = document.getElementById('prev-month');
+const nextMonthBtn = document.getElementById('next-month');
+const todayBtn = document.getElementById('today-btn');
 
-let data_name_schedule = {};
-let global_month = new Date().getMonth();
-let currentYear = new Date().getFullYear();
+const compareCheckboxesEl = document.getElementById('compare-checkboxes');
+const matchResultsEl = document.getElementById('match-results');
+const selectAllBtn = document.getElementById('select-all-btn');
 
-// DOM элементы
-const calendarElement = document.getElementById('calendar');
-const monthTitleElement = document.getElementById('monthTitle');
-const fileInput = document.getElementById('hiddenFileInput');
-const dateInput = document.getElementById('add_date');
+const exportBtn = document.getElementById('export-btn');
+const importFile = document.getElementById('import-file');
+
+// Установка даты по умолчанию сегодняшней в форме
+startDateInput.valueAsDate = new Date();
 
 // Инициализация
-dateInput.value = new Date().toISOString().slice(0, 10);
-read_data();
-
-// Основные функции
-function generateCalendar(user_id) {
-  const userData = data_name_schedule[user_id];
-  if (!userData) return;
-
-  const { date, schedule } = userData;
-  const { workDays, offDays } = SCHEDULE_TYPES[schedule] || { workDays: 0, offDays: 0 };
-  
-  const [year, month, day] = date.split('-').map(Number);
-  userData.month_count = {};
-
-  let workingDayCounter = 0;
-  let workingDayCounter3to2 = 0;
-
-  for (let m = month - 1; m < 12; m++) {
-    userData.month_count[m] = {};
-    const daysInMonth = new Date(year, m + 1, 0).getDate();
-
-    for (let d = 1; d <= daysInMonth; d++) {
-      userData.month_count[m][d] = {};
-      
-      if (d >= day || m > month - 1) {
-        if (workingDayCounter < workDays) {
-          userData.month_count[m][d].style = "work";
-          workingDayCounter++;
-          
-          if (schedule === "2/2") {
-            workingDayCounter3to2 = (workingDayCounter3to2 % 2) + 1;
-            userData.month_count[m][d].name_day = workingDayCounter3to2 === 1 ? 
-              SHIFT_NAMES[5] : SHIFT_NAMES[7];
-          } 
-          else if (schedule === "3/2") {
-            workingDayCounter3to2 = (workingDayCounter3to2 % 9) + 1;
-            userData.month_count[m][d].name_day = 
-              workingDayCounter3to2 < 4 ? SHIFT_NAMES[1] :
-              workingDayCounter3to2 < 7 ? SHIFT_NAMES[2] : SHIFT_NAMES[3];
-          }
-          else if (schedule === "1/3") {
-            userData.month_count[m][d].name_day = SHIFT_NAMES[4];
-          }
-        } else {
-          userData.month_count[m][d].style = "off";
-          userData.month_count[m][d].name_day = SHIFT_NAMES[6];
-          workingDayCounter = workingDayCounter >= workDays + offDays - 1 ? 0 : workingDayCounter + 1;
-        }
-      } else {
-        userData.month_count[m][d] = "day";
-      }
-    }
-  }
-}
-
-function createCalendar() {
-  const user_id = document.getElementById('names').value;
-  const userData = data_name_schedule[user_id];
-  if (!userData) return;
-
-  const [year, month] = userData.date.split('-').map(Number);
-  const firstDay = new Date(year, global_month, 1).getDay();
-
-  // Очистка календаря
-  calendarElement.innerHTML = '';
-  
-  // Заголовки дней недели
-  DAY_NAMES.forEach(day => {
-    const dayDiv = document.createElement('div');
-    dayDiv.classList.add('day');
-    dayDiv.textContent = day;
-    calendarElement.appendChild(dayDiv);
-  });
-
-  // Пустые ячейки перед первым днем месяца
-  for (let i = 0; i < (firstDay + 6) % 7; i++) {
-    const emptyDiv = document.createElement('div');
-    emptyDiv.classList.add('day');
-    calendarElement.appendChild(emptyDiv);
-  }
-
-  // Дни месяца
-  for (const day in userData.month_count[global_month]) {
-    const dayData = userData.month_count[global_month][day];
-    //if (typeof dayData === 'string') continue;
-
-    const dayDiv = document.createElement('div');
-    dayDiv.classList.add('day', dayData.style);
-    
-    // Проверка совпадений выходных дней
-    const activeUsers = Object.values(data_name_schedule).filter(u => u.schedule_state);
-    const isCoincidence = activeUsers.length > 1 && 
-      activeUsers.every(u => u.month_count[global_month]?.[day]?.style === "off");
-    
-    if (isCoincidence) {
-      dayDiv.classList.add('coincidence');
-      dayDiv.textContent = `${day}\n${dayData.name_day}\nсовпадение`;
-    } else {
-      dayDiv.textContent = `${day}\n${dayData.name_day}`;
-    }
-    
-    calendarElement.appendChild(dayDiv);
-  }
-
-  // Обновление заголовка месяца
-  monthTitleElement.textContent = `${new Intl.DateTimeFormat('ru-RU', { month: 'long' })
-    .format(new Date(year, global_month))} ${year}`;
-}
-
-function updateCalendar() {
-  global_month = new Date().getMonth();
-  const usersSelect = document.getElementById('names');
-  
-  usersSelect.innerHTML = '';
-  for (const user_id in data_name_schedule) { 
-    data_name_schedule[user_id].month_count = {};
-    const option = new Option(data_name_schedule[user_id].name, user_id);
-    usersSelect.add(option);
-    generateCalendar(user_id);
-  }
-  
-  createCalendar();
-}
-
-// Функции для работы с UI
-function addUserRow(user_id, userData) {
-  const table = document.getElementById('users').querySelector('tbody');
-  const row = document.createElement('tr');
-  row.dataset.id = user_id;
-
-  // Имя
-  const nameCell = document.createElement('th');
-  nameCell.textContent = userData.name;
-  row.appendChild(nameCell);
-
-  // Дата
-  const dateCell = document.createElement('td');
-  dateCell.textContent = userData.date;
-  row.appendChild(dateCell);
-
-  // График
-  const scheduleCell = document.createElement('td');
-  scheduleCell.textContent = userData.schedule;
-  row.appendChild(scheduleCell);
-
-  // Чекбокс активности
-  const checkboxCell = document.createElement('td');
-  const checkbox = document.createElement('input');
-  checkbox.type = 'checkbox';
-  checkbox.checked = userData.schedule_state;
-  checkbox.style.margin = '0';
-  checkbox.addEventListener('change', () => {
-    userData.schedule_state = checkbox.checked;
-    write_data();
-    updateCalendar();
-  });
-  checkboxCell.appendChild(checkbox);
-  row.appendChild(checkboxCell);
-
-  // Кнопка удаления
-  const deleteCell = document.createElement('td');
-  const deleteButton = document.createElement('input');
-  deleteButton.type = 'button';
-  deleteButton.value = 'Удалить';
-  deleteButton.style.margin = '0';
-  deleteButton.addEventListener('click', () => {
-    delete data_name_schedule[user_id];
-    row.remove();
-    if (Object.keys(data_name_schedule).length === 0) {
-      calendarElement.innerHTML = '';
-    }
-    write_data();
-    updateCalendar();
-  });
-  deleteCell.appendChild(deleteButton);
-  row.appendChild(deleteCell);
-
-  table.appendChild(row);
-}
-
-function add_user() {
-  const name = document.getElementById("add_name").value.trim();
-  const date = document.getElementById("add_date").value;
-  const schedule = document.getElementById("add_schedule").value;
-
-  if (!name || !date || !schedule) return;
-
-  const user_id = Date.now();
-  const userData = {
-    name,
-    date,
-    schedule,
-    month_count: {},
-    schedule_state: true
-  };
-
-  data_name_schedule[user_id] = userData;
-  addUserRow(user_id, userData);
-
-  // Сброс формы
-  document.getElementById("add_name").value = "";
-  document.getElementById("add_date").value = new Date().toISOString().slice(0, 10);
-  
-  write_data();
-  updateCalendar();
-}
-
-// Функции для работы с данными
-function export_data() {
-  const dataStr = JSON.stringify(data_name_schedule, null, 2);
-  const blob = new Blob([dataStr], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'work_schedule.json';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-function import_data() {
-  fileInput.click();
-}
-
-function read_function() {
-  fileInput.addEventListener('change', () => {
-    if (!fileInput.files.length) return;
-
-    const reader = new FileReader();
-    reader.onload = e => {
-      try {
-        const importedData = JSON.parse(e.target.result);
-        if (importedData && typeof importedData === 'object') {
-          data_name_schedule = importedData;
-          updateImport();
-          write_data();
-        }
-      } catch (err) {
-        console.error('Ошибка при чтении файла:', err);
-      }
-    };
-    reader.readAsText(fileInput.files[0]);
-  });
-}
-
-function updateImport() {
-  const table = document.getElementById('users').querySelector('tbody');
-  table.innerHTML = '';
-  
-  for (const user_id in data_name_schedule) {
-    addUserRow(user_id, data_name_schedule[user_id]);
-  }
-  
-  updateCalendar();
-}
-
-// Функции для работы с localStorage
-function write_data() {
-  localStorage.setItem('data_name_schedule', JSON.stringify(data_name_schedule));
-}
-
-function read_data() {
-  const storedData = localStorage.getItem('data_name_schedule');
-  if (!storedData) return;
-
-  try {
-    data_name_schedule = JSON.parse(storedData);
-    updateImport();
-  } catch (err) {
-    console.error('Ошибка при чтении данных:', err);
-  }
-}
-
-// Навигация по месяцам
-function nextMonth() {
-  global_month = (global_month + 1) % 12;
-  if (global_month === 0) currentYear++;
-  createCalendar();
-}
-
-function previousMonth() {
-  global_month = (global_month - 1 + 12) % 12;
-  if (global_month === 11) currentYear--;
-  createCalendar();
-}
-
-// Инициализация переключателя таблицы
-function initTableToggle() {
-  const userListHeader = document.querySelector('.user-list h2');
-  const userListSection = document.querySelector('.user-list');
-  
-  userListHeader.addEventListener('click', () => {
-    userListSection.classList.toggle('collapsed');
-    const icon = userListHeader.querySelector('.toggle-icon');
-    if (userListSection.classList.contains('collapsed')) {
-      icon.classList.replace('fa-chevron-down', 'fa-chevron-right');
-    } else {
-      icon.classList.replace('fa-chevron-right', 'fa-chevron-down');
-    }
-  });
-}
-
-// Оптимизация для мобильных устройств
-function optimizeForMobile() {
-  // Увеличиваем область клика для кнопок
-  document.querySelectorAll('.btn').forEach(btn => {
-    btn.style.minHeight = '44px';
-  });
-  
-  // Оптимизация ввода даты
-  if ('ontouchstart' in window) {
-    dateInput.type = 'date';
-  } else {
-    dateInput.type = 'text';
-    dateInput.addEventListener('focus', () => {
-      dateInput.type = 'date';
-    });
-  }
-  
-  // Улучшение таблицы для мобильных
-  const tableContainer = document.querySelector('.table-container');
-  tableContainer.style.overflowX = 'auto';
-  tableContainer.style.webkitOverflowScrolling = 'touch';
-}
-
-// Вызываем при загрузке
 document.addEventListener('DOMContentLoaded', () => {
-  optimizeForMobile();
-  initTableToggle();
-  read_function();
-
+    renderUsers();
+    renderCalendar();
+    setupEventListeners();
 });
+
+function setupEventListeners() {
+    prevMonthBtn.addEventListener('click', () => {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        renderCalendar();
+    });
+
+    nextMonthBtn.addEventListener('click', () => {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        renderCalendar();
+    });
+
+    todayBtn.addEventListener('click', () => {
+        currentDate = new Date();
+        renderCalendar();
+    });
+
+    monthSelectEl.addEventListener('change', (e) => {
+        currentDate.setMonth(parseInt(e.target.value));
+        renderCalendar();
+    });
+
+    yearSelectEl.addEventListener('change', (e) => {
+        currentDate.setFullYear(parseInt(e.target.value));
+        renderCalendar();
+    });
+
+    profileForm.addEventListener('submit', handleFormSubmit);
+    cancelEditBtn.addEventListener('click', resetForm);
+
+    exportBtn.addEventListener('click', exportData);
+    importFile.addEventListener('change', importData);
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', toggleSelectAllUsers);
+    }
+}
+
+// ==========================================
+// ЛОГИКА ГРАФИКОВ РАБОТЫ
+// ==========================================
+function getShiftForDate(user, targetDate) {
+    const [startYear, startMonth, startDay] = user.startDate.split('-').map(Number);
+    const startUTC = Date.UTC(startYear, startMonth - 1, startDay);
+    
+    const targetUTC = Date.UTC(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+
+    const diffTime = targetUTC - startUTC;
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) return { type: 'none', label: 'До старта', isWeekend: false };
+
+    let cycleDay = diffDays % 15;
+
+    switch (user.scheduleType) {
+        case '2-2-complex':
+            let cycle22 = diffDays % 4;
+            if (cycle22 === 0) return { type: 'work', label: 'День (08:00 - 20:00)', isWeekend: false };
+            if (cycle22 === 1) return { type: 'night', label: 'Ночь (20:00 - 08:00)', isWeekend: false };
+            if (cycle22 === 2) return { type: 'rest', label: 'Отсыпной', isWeekend: true }; // Отсыпной = выходной
+            return { type: 'weekend', label: 'Выходной', isWeekend: true };
+
+        case '1-3':
+            let cycle13 = diffDays % 4;
+            if (cycle13 === 0) return { type: 'work', label: 'Сутки', isWeekend: false };
+            if (cycle13 === 1) return { type: 'rest', label: 'Отсыпной', isWeekend: true }; // Отсыпной = выходной
+            return { type: 'weekend', label: 'Выходной', isWeekend: true };
+
+        case '3-2-complex':
+            if (cycleDay >= 0 && cycleDay <= 2) return { type: 'work', label: 'Утро (08-16)', isWeekend: false };
+            if (cycleDay === 3 || cycleDay === 4) return { type: 'weekend', label: 'Выходной', isWeekend: true };
+            if (cycleDay >= 5 && cycleDay <= 7) return { type: 'work', label: 'Вечер (16-00)', isWeekend: false };
+            if (cycleDay === 8) return { type: 'weekend', label: 'Выходной', isWeekend: true };
+            if (cycleDay >= 9 && cycleDay <= 11) return { type: 'night', label: 'Ночь (00-08)', isWeekend: false };
+            if (cycleDay === 12) return { type: 'rest', label: 'Отсыпной', isWeekend: true }; // Отсыпной = выходной
+            return { type: 'weekend', label: 'Выходной', isWeekend: true };
+
+        default:
+            return { type: 'none', label: '-', isWeekend: false };
+    }
+}
+
+function getScheduleName(type) {
+    switch(type) {
+        case '2-2-complex': return '2/2 (День, Ночь, Отс, Вых)';
+        case '1-3': return '1/3 (Сутки, Отс, 2 Вых)';
+        case '3-2-complex': return 'Сложный 3/2';
+        default: return type;
+    }
+}
+
+// ==========================================
+// УПРАВЛЕНИЕ ПРОФИЛЯМИ (CRUD)
+// ==========================================
+function handleFormSubmit(e) {
+    e.preventDefault();
+    const name = usernameInput.value.trim();
+    const scheduleType = scheduleTypeSelect.value;
+    const startDate = startDateInput.value;
+    const editIndex = editIndexInput.value;
+
+    if (!name || !startDate) return;
+
+    const userData = { name, scheduleType, startDate };
+
+    if (editIndex === "") {
+        users.push(userData);
+    } else {
+        users[editIndex] = userData;
+        resetForm();
+    }
+
+    saveAndRefresh();
+    profileForm.reset();
+    startDateInput.valueAsDate = new Date();
+}
+
+function editUser(index) {
+    const user = users[index];
+    usernameInput.value = user.name;
+    scheduleTypeSelect.value = user.scheduleType;
+    startDateInput.value = user.startDate;
+    editIndexInput.value = index;
+    saveBtn.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Обновить';
+    cancelEditBtn.style.display = 'block';
+}
+
+function deleteUser(index) {
+    users.splice(index, 1);
+    selectedUserIndicesForCompare = selectedUserIndicesForCompare.filter(i => i !== index);
+    saveAndRefresh();
+}
+
+function resetForm() {
+    profileForm.reset();
+    editIndexInput.value = "";
+    saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Сохранить';
+    cancelEditBtn.style.display = 'none';
+    startDateInput.valueAsDate = new Date();
+}
+
+function saveAndRefresh() {
+    localStorage.setItem('shift_users', JSON.stringify(users));
+    renderUsers();
+    renderCalendar();
+}
+
+// ==========================================
+// ОТРИСОВКА ИНТЕРФЕЙСА
+// ==========================================
+function renderUsers() {
+    usersListEl.innerHTML = '';
+    if (users.length === 0) {
+        usersListEl.innerHTML = '<p class="hint">Нет добавленных пользователей</p>';
+    } else {
+        users.forEach((user, index) => {
+            const item = document.createElement('div');
+            item.className = 'user-item';
+            item.innerHTML = `
+                <div class="user-info">
+                    <span class="user-name">${escapeHtml(user.name)}</span>
+                    <span class="user-schedule">${getScheduleName(user.scheduleType)}</span>
+                </div>
+                <div class="user-actions">
+                    <button class="icon-btn" onclick="editUser(${index})" title="Редактировать"><i class="fa-solid fa-pen"></i></button>
+                    <button class="icon-btn delete" onclick="deleteUser(${index})" title="Удалить"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            `;
+            usersListEl.appendChild(item);
+        });
+    }
+
+    compareCheckboxesEl.innerHTML = '';
+    if (users.length === 0) {
+        compareCheckboxesEl.innerHTML = '<p class="hint">Сначала добавьте пользователей</p>';
+        matchResultsEl.innerHTML = 'Нет данных для сравнения.';
+        return;
+    }
+
+    users.forEach((user, index) => {
+        const isChecked = selectedUserIndicesForCompare.includes(index);
+        const label = document.createElement('label');
+        label.className = 'checkbox-label';
+        label.innerHTML = `
+            <input type="checkbox" value="${index}" ${isChecked ? 'checked' : ''} onchange="toggleCompareUser(${index})">
+            <span>${escapeHtml(user.name)}</span>
+        `;
+        compareCheckboxesEl.appendChild(label);
+    });
+
+    calculateMatches();
+}
+
+function toggleCompareUser(index) {
+    if (selectedUserIndicesForCompare.includes(index)) {
+        selectedUserIndicesForCompare = selectedUserIndicesForCompare.filter(i => i !== index);
+    } else {
+        selectedUserIndicesForCompare.push(index);
+    }
+    renderCalendar();
+    calculateMatches();
+}
+
+function toggleSelectAllUsers() {
+    if (selectedUserIndicesForCompare.length === users.length) {
+        selectedUserIndicesForCompare = [];
+    } else {
+        selectedUserIndicesForCompare = users.map((_, index) => index);
+    }
+    renderUsers();
+    renderCalendar();
+}
+
+// ==========================================
+// КАЛЕНДАРЬ И СОВПАДЕНИЯ
+// ==========================================
+function renderCalendar() {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    monthSelectEl.value = month;
+    populateYearSelect(year);
+
+    calendarDaysEl.innerHTML = '';
+
+    const firstDayIndex = new Date(year, month, 1).getDay();
+    const offset = (firstDayIndex === 0) ? 6 : firstDayIndex - 1;
+
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    const prevTotalDays = new Date(year, month, 0).getDate();
+
+    const todayStr = new Date().toDateString();
+    const sharedWeekendDates = getSharedWeekendsDates(year, month);
+
+    for (let i = offset - 1; i >= 0; i--) {
+        const dayNum = prevTotalDays - i;
+        const cellDate = new Date(year, month - 1, dayNum);
+        createDayCell(cellDate, true, todayStr, sharedWeekendDates);
+    }
+
+    for (let i = 1; i <= totalDays; i++) {
+        const cellDate = new Date(year, month, i);
+        createDayCell(cellDate, false, todayStr, sharedWeekendDates);
+    }
+
+    const totalRenderedCells = offset + totalDays;
+    const nextDaysCount = (totalRenderedCells % 7 === 0) ? 0 : 7 - (totalRenderedCells % 7);
+    for (let i = 1; i <= nextDaysCount; i++) {
+        const cellDate = new Date(year, month + 1, i);
+        createDayCell(cellDate, true, todayStr, sharedWeekendDates);
+    }
+
+    calculateMatches();
+}
+
+function populateYearSelect(currentYear) {
+    yearSelectEl.innerHTML = '';
+    const startYear = currentYear - 10;
+    const endYear = currentYear + 15;
+
+    for (let y = startYear; y <= endYear; y++) {
+        const option = document.createElement('option');
+        option.value = y;
+        option.textContent = y;
+        if (y === currentYear) {
+            option.selected = true;
+        }
+        yearSelectEl.appendChild(option);
+    }
+}
+
+function createDayCell(dateObj, isOtherMonth, todayStr, sharedWeekendDates) {
+    const cell = document.createElement('div');
+    cell.className = `calendar-day ${isOtherMonth ? 'other-month' : ''}`;
+    
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
+
+    if (dateObj.toDateString() === todayStr) {
+        cell.classList.add('today');
+    }
+
+    if (sharedWeekendDates.has(dateString)) {
+        cell.classList.add('shared-match');
+    }
+
+    const dayHeader = document.createElement('div');
+    dayHeader.className = 'day-header';
+    dayHeader.innerHTML = `<span class="day-number">${dateObj.getDate()}</span>`;
+    cell.appendChild(dayHeader);
+
+    const shiftsContainer = document.createElement('div');
+    shiftsContainer.className = 'shifts-container';
+
+    // Показываем смены ТОЛЬКО выбранных для сравнения пользователей
+    users.forEach((user, userIndex) => {
+        if (selectedUserIndicesForCompare.includes(userIndex)) {
+            const shift = getShiftForDate(user, dateObj);
+            if (shift.type !== 'none') {
+                const badge = document.createElement('div');
+                badge.className = `shift-badge ${shift.type}`;
+                badge.innerHTML = `<span><strong>${escapeHtml(user.name)}:</strong> ${shift.label}</span>`;
+                shiftsContainer.appendChild(badge);
+            }
+        }
+    });
+
+    cell.appendChild(shiftsContainer);
+    calendarDaysEl.appendChild(cell);
+}
+
+function getSharedWeekendsDates(year, month) {
+    const sharedDates = new Set();
+    if (selectedUserIndicesForCompare.length === 0) return sharedDates;
+
+    const totalDays = new Date(year, month + 1, 0).getDate();
+
+    for (let i = 1; i <= totalDays; i++) {
+        const dateObj = new Date(year, month, i);
+        const y = dateObj.getFullYear();
+        const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const d = String(dateObj.getDate()).padStart(2, '0');
+        const dateString = `${y}-${m}-${d}`;
+
+        let allAreFree = true;
+        for (let userIdx of selectedUserIndicesForCompare) {
+            const user = users[userIdx];
+            const shift = getShiftForDate(user, dateObj);
+            if (!shift.isWeekend) {
+                allAreFree = false;
+                break;
+            }
+        }
+
+        if (allAreFree) {
+            sharedDates.add(dateString);
+        }
+    }
+
+    return sharedDates;
+}
+
+function calculateMatches() {
+    if (selectedUserIndicesForCompare.length === 0) {
+        matchResultsEl.innerHTML = 'Выберите хотя бы одного пользователя.';
+        return;
+    }
+
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const sharedDates = getSharedWeekendsDates(year, month);
+
+    if (sharedDates.size === 0) {
+        matchResultsEl.innerHTML = 'В текущем месяце совпадений нет.';
+        return;
+    }
+
+    const sortedDates = Array.from(sharedDates).sort();
+    let titleText = selectedUserIndicesForCompare.length === 1 ? 'Выходные дни:' : `Общие совпадения (${sortedDates.length}):`;
+    
+    let html = `<strong>${titleText}</strong><br><ul>`;
+    
+    sortedDates.forEach(dateStr => {
+        const parts = dateStr.split('-');
+        html += `<li>${parts[2]}.${parts[1]}.${parts[0]}</li>`;
+    });
+    html += '</ul>';
+
+    matchResultsEl.innerHTML = html;
+}
+
+// ==========================================
+// ЭКСПОРТ И ИМПОРТ
+// ==========================================
+function exportData() {
+    if (users.length === 0) {
+        alert('Нет данных для экспорта.');
+        return;
+    }
+
+    try {
+        const dataStr = JSON.stringify(users, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json;charset=utf-8;' });
+        
+        const downloadAnchor = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        downloadAnchor.setAttribute('href', url);
+        downloadAnchor.setAttribute('download', `shift_calendar_data_${new Date().toISOString().slice(0,10)}.json`);
+        
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        
+        setTimeout(() => {
+            document.body.removeChild(downloadAnchor);
+            URL.revokeObjectURL(url);
+        }, 100);
+    } catch (error) {
+        console.error('Ошибка экспорта:', error);
+        alert('Не удалось экспортировать данные.');
+    }
+}
+
+function importData(event) {
+    const fileReader = new FileReader();
+    if (event.target.files[0]) {
+        fileReader.readAsText(event.target.files[0], "UTF-8");
+        fileReader.onload = (e) => {
+            try {
+                const importedUsers = JSON.parse(e.target.result);
+                if (Array.isArray(importedUsers)) {
+                    users = importedUsers;
+                    selectedUserIndicesForCompare = [];
+                    saveAndRefresh();
+                    alert('Данные успешно импортированы!');
+                } else {
+                    alert('Ошибка: Неверный формат файла.');
+                }
+            } catch (error) {
+                alert('Ошибка при чтении файла JSON.');
+            }
+            importFile.value = '';
+        };
+    }
+}
+
+function escapeHtml(str) {
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
