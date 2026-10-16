@@ -1,7 +1,7 @@
 // Состояние приложения
 let users = JSON.parse(localStorage.getItem('shift_users')) || [];
 let currentDate = new Date();
-let selectedUserIndicesForCompare = [];
+let selectedUserIndicesForCompare = JSON.parse(localStorage.getItem('shift_selected_compare')) || [];
 
 // DOM Элементы
 const usersListEl = document.getElementById('users-list');
@@ -94,13 +94,13 @@ function getShiftForDate(user, targetDate) {
             let cycle22 = diffDays % 4;
             if (cycle22 === 0) return { type: 'work', label: 'День (08:00 - 20:00)', isWeekend: false };
             if (cycle22 === 1) return { type: 'night', label: 'Ночь (20:00 - 08:00)', isWeekend: false };
-            if (cycle22 === 2) return { type: 'rest', label: 'Отсыпной', isWeekend: true }; // Отсыпной = выходной
+            if (cycle22 === 2) return { type: 'rest', label: 'Отсыпной', isWeekend: true }; // Отсыпной считается выходным
             return { type: 'weekend', label: 'Выходной', isWeekend: true };
 
         case '1-3':
             let cycle13 = diffDays % 4;
             if (cycle13 === 0) return { type: 'work', label: 'Сутки', isWeekend: false };
-            if (cycle13 === 1) return { type: 'rest', label: 'Отсыпной', isWeekend: true }; // Отсыпной = выходной
+            if (cycle13 === 1) return { type: 'rest', label: 'Отсыпной', isWeekend: true }; // Отсыпной считается выходным
             return { type: 'weekend', label: 'Выходной', isWeekend: true };
 
         case '3-2-complex':
@@ -109,7 +109,7 @@ function getShiftForDate(user, targetDate) {
             if (cycleDay >= 5 && cycleDay <= 7) return { type: 'work', label: 'Вечер (16-00)', isWeekend: false };
             if (cycleDay === 8) return { type: 'weekend', label: 'Выходной', isWeekend: true };
             if (cycleDay >= 9 && cycleDay <= 11) return { type: 'night', label: 'Ночь (00-08)', isWeekend: false };
-            if (cycleDay === 12) return { type: 'rest', label: 'Отсыпной', isWeekend: true }; // Отсыпной = выходной
+            if (cycleDay === 12) return { type: 'rest', label: 'Отсыпной', isWeekend: true }; // Отсыпной считается выходным
             return { type: 'weekend', label: 'Выходной', isWeekend: true };
 
         default:
@@ -165,6 +165,7 @@ function editUser(index) {
 function deleteUser(index) {
     users.splice(index, 1);
     selectedUserIndicesForCompare = selectedUserIndicesForCompare.filter(i => i !== index);
+    localStorage.setItem('shift_selected_compare', JSON.stringify(selectedUserIndicesForCompare));
     saveAndRefresh();
 }
 
@@ -234,6 +235,7 @@ function toggleCompareUser(index) {
     } else {
         selectedUserIndicesForCompare.push(index);
     }
+    localStorage.setItem('shift_selected_compare', JSON.stringify(selectedUserIndicesForCompare));
     renderCalendar();
     calculateMatches();
 }
@@ -244,6 +246,7 @@ function toggleSelectAllUsers() {
     } else {
         selectedUserIndicesForCompare = users.map((_, index) => index);
     }
+    localStorage.setItem('shift_selected_compare', JSON.stringify(selectedUserIndicesForCompare));
     renderUsers();
     renderCalendar();
 }
@@ -450,6 +453,7 @@ function importData(event) {
                 if (Array.isArray(importedUsers)) {
                     users = importedUsers;
                     selectedUserIndicesForCompare = [];
+                    localStorage.removeItem('shift_selected_compare');
                     saveAndRefresh();
                     alert('Данные успешно импортированы!');
                 } else {
